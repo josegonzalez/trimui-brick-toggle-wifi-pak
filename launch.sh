@@ -374,7 +374,7 @@ main() {
         export PLATFORM="tg5040"
     fi
 
-    allowed_platforms="tg5040"
+    allowed_platforms="tg5040 rg35xxplus"
     if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
         show_message "$PLATFORM is not a supported platform" 1>&2
         exit 1
@@ -386,12 +386,6 @@ main() {
     fi
     if [ ! -f "$progdir/bin/minui-list-$PLATFORM" ]; then
         show_message "$progdir/bin/minui-list-$PLATFORM not found" 1>&2
-        exit 1
-    fi
-
-    allowed_platforms="tg5040 rg35xxplus"
-    if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
-        show_message "$PLATFORM is not a supported platform" 1>&2
         exit 1
     fi
 
