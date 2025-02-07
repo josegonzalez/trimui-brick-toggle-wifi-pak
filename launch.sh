@@ -1,4 +1,5 @@
 #!/bin/sh
+set -x
 echo "$0" "$@"
 progdir="$(dirname "$0")"
 cd "$progdir" || exit 1
@@ -241,6 +242,8 @@ wifi_enable() {
         show_message "$PLATFORM is not a supported platform" 2
         return 1
     fi
+
+    ifconfig wlan0 up || true
 }
 
 wifi_enabled() {
@@ -257,7 +260,8 @@ wifi_enabled() {
         return 1
     fi
 
-    if [ "$(cat /sys/class/net/wlan0/carrier 2>/dev/null)" != "1" ]; then
+    # check if the device is on
+    if [ "$(cat /sys/class/net/wlan0/flags 2>/dev/null)" != "0x1003" ]; then
         return 1
     fi
 
@@ -279,8 +283,8 @@ wifi_off() {
         killall -9 wpa_supplicant 2>/dev/null || true
     fi
 
-    status="$(cat /sys/class/net/wlan0/carrier)"
-    if [ "$status" = 1 ]; then
+    status="$(cat /sys/class/net/wlan0/flags)"
+    if [ "$status" = "0x1003" ]; then
         echo "Marking wlan0 interface down..."
         ifconfig wlan0 down || true
     fi
