@@ -155,8 +155,10 @@ show_message() {
 }
 
 write_config() {
-    cp "$progdir/res/wpa_supplicant.conf.tmpl" "$progdir/res/wpa_supplicant.conf"
     echo "Generating wpa_supplicant.conf..."
+    cp "$progdir/res/wpa_supplicant.conf.tmpl" "$progdir/res/wpa_supplicant.conf"
+    echo "Generating netplan.yaml..."
+    cp "$progdir/res/netplan.yaml.tmpl" "$progdir/res/netplan.yaml"
 
     if [ ! -f "$SDCARD_PATH/wifi.txt" ] && [ -f "$progdir/wifi.txt" ]; then
         mv "$progdir/wifi.txt" "$SDCARD_PATH/wifi.txt"
@@ -170,6 +172,7 @@ write_config() {
         return 1
     fi
 
+    has_passwords=false
     priority_used=false
     echo "" >>"$SDCARD_PATH/wifi.txt"
     while read -r line; do
@@ -194,6 +197,8 @@ write_config() {
             continue
         fi
 
+        has_passwords=true
+
         {
             echo "network={"
             echo "    ssid=\"$ssid\""
@@ -204,10 +209,18 @@ write_config() {
             fi
             echo "}"
         } >>"$progdir/res/wpa_supplicant.conf"
+        {
+            echo "                \"$ssid\":"
+            echo "                    password: \"$psk\""
+        } >>"$progdir/res/netplan.yaml"
     done <"$SDCARD_PATH/wifi.txt"
 
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         cp "$progdir/res/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf
+        cp "$progdir/res/netplan.yaml" /etc/netplan/01-netcfg.yaml
+        if [ "$has_passwords" = false ]; then
+            rm -f /etc/netplan/01-netcfg.yaml
+        fi
     elif [ "$PLATFORM" = "tg5040" ]; then
         cp "$progdir/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
     else
@@ -237,7 +250,9 @@ wifi_enable() {
         ip link set wlan0 up
         iw dev wlan0 set power_save off
 
-        systemctl start wpa_supplicant
+        systemctl start wpa_supplicant || true
+        systemctl start systemd-networkd || true
+        netplan apply
     else
         show_message "$PLATFORM is not a supported platform" 2
         return 1
@@ -280,6 +295,7 @@ wifi_off() {
     if pgrep wpa_supplicant; then
         echo "Stopping wpa_supplicant..."
         /etc/init.d/wpa_supplicant stop || true
+        systemctl stop wpa_supplicant || true
         killall -9 wpa_supplicant 2>/dev/null || true
     fi
 
@@ -295,6 +311,11 @@ wifi_off() {
     fi
 
     cp "$progdir/res/wpa_supplicant.conf.tmpl" "$progdir/res/wpa_supplicant.conf"
+    if [ "$PLATFORM" = "rg35xxplus" ]; then
+        rm -f /etc/netplan/01-netcfg.yaml
+        netplan apply
+        systemctl stop systemd-networkd || true
+    fi
 }
 
 wifi_on() {
