@@ -7,7 +7,7 @@ A MinUI app that manages wifi connections.
 This pak is designed and tested on the following MinUI Platforms and devices:
 
 - `tg5040`: Trimui Brick (formerly `tg3040`), Trimui Smart Pro
-- `rg35xxplus`: RG-35XX Plus, RG-34XX, RG-35XX H, RG-35XX SP (needs wifi to be enabled on stock first)
+- `rg35xxplus`: RG-35XX Plus, RG-34XX, RG-35XX H, RG-35XX SP
 
 Use the correct platform for your device.
 
