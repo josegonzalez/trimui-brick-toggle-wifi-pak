@@ -398,6 +398,11 @@ main() {
         exit 1
     fi
 
+    chmod +x "$progdir/bin/minui-keyboard-$PLATFORM"
+    chmod +x "$progdir/bin/minui-list-$PLATFORM"
+    chmod +x "$progdir/bin/sdl2imgshow"
+    chmod +x "$JQ"
+
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         RGXX_MODEL="$(strings /mnt/vendor/bin/dmenu.bin | grep ^RG)"
         if [ "$RGXX_MODEL" = "RG28xx" ]; then
