@@ -241,6 +241,11 @@ wifi_enable() {
         show_message "$PLATFORM is not a supported platform" 2
         return 1
     fi
+
+    status="$(cat /sys/class/net/wlan0/carrier)"
+    if [ "$status" = 0 ]; then
+        ifconfig wlan0 up || true
+    fi
 }
 
 wifi_enabled() {
