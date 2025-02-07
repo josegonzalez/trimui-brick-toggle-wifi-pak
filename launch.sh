@@ -12,11 +12,18 @@ if uname -m | grep -q '64'; then
 fi
 
 main_screen() {
+    minui_list_file="/tmp/minui-list"
+    rm -f "$minui_list_file"
+    touch "$minui_list_file"
     enabled="$(cat /sys/class/net/wlan0/operstate)"
-    configuration="Enabled: false\nEnable"
+    echo "Enabled: false" >>"$minui_list_file"
+    echo "Enable" >>"$minui_list_file"
+
     ip_address="N/A"
     if wifi_enabled; then
-        configuration="Enabled: true\nDisable\nConnect to network"
+        echo "Enabled: true" >"$minui_list_file"
+        echo "Disable" >>"$minui_list_file"
+        echo "Connect to network" >>"$minui_list_file"
     fi
 
     if [ "$enabled" = "up" ]; then
@@ -45,26 +52,34 @@ main_screen() {
             ip_address="N/A"
         fi
 
-        configuration="Enabled: true\nSSID: $ssid\nIP: $ip_address\nDisable\nConnect to network"
+        echo "Enabled: true" >"$minui_list_file"
+        echo "SSID: $ssid" >>"$minui_list_file"
+        echo "IP: $ip_address" >>"$minui_list_file"
+        echo "Disable" >>"$minui_list_file"
+        echo "Connect to network" >>"$minui_list_file"
     fi
 
     killall sdl2imgshow 2>/dev/null || true
-    echo -e "$configuration" | "$progdir/bin/minui-list-$PLATFORM" --file - --format text --header "Wifi Configuration"
+    "$progdir/bin/minui-list-$PLATFORM" --file "$minui_list_file" --format text --header "Wifi Configuration"
 }
 
 networks_screen() {
     show_message "Scanning for networks..." 2
     DELAY=30
+
+    minui_list_file="/tmp/minui-list"
+    rm -f "$minui_list_file"
+    touch "$minui_list_file"
     for i in $(seq 1 "$DELAY"); do
-        networks="$(iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort)"
-        if [ -n "$networks" ]; then
+        iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort >>"$minui_list_file"
+        if [ -s "$minui_list_file" ]; then
             break
         fi
         sleep 1
     done
 
     killall sdl2imgshow 2>/dev/null || true
-    echo -e "$networks" | "$progdir/bin/minui-list-$PLATFORM" --file - --format text --header "Wifi Networks"
+    "$progdir/bin/minui-list-$PLATFORM" --file "$minui_list_file" --format text --header "Wifi Networks"
 }
 
 password_screen() {
@@ -190,12 +205,20 @@ write_config() {
         } >>"$progdir/res/wpa_supplicant.conf"
     done <"$SDCARD_PATH/wifi.txt"
 
-    cp "$progdir/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+    if [ "$PLATFORM" = "rg35xxplus" ]; then
+        cp "$progdir/res/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf
+    elif [ "$PLATFORM" = "tg5040" ]; then
+        cp "$progdir/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+    else
+        show_message "$PLATFORM is not a supported platform" 2
+        return 1
+    fi
 }
 
 wifi_enable() {
-    SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-    if [ -f "$SYSTEM_JSON_PATH" ]; then
+    echo "Preparing to enable wifi..."
+    if [ "$PLATFORM" = "tg5040" ]; then
+        SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
         chmod +x "$JQ"
         "$JQ" '.wifi = 1' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
         mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
@@ -205,9 +228,19 @@ wifi_enable() {
     rfkill unblock wifi || true
 
     echo "Starting wpa_supplicant..."
-    /etc/init.d/wpa_supplicant stop || true
-    /etc/init.d/wpa_supplicant start || true
-    ( (udhcpc -i wlan0 -q &) &)
+    if [ "$PLATFORM" = "tg5040" ]; then
+        /etc/init.d/wpa_supplicant stop || true
+        /etc/init.d/wpa_supplicant start || true
+        ( (udhcpc -i wlan0 -q &) &)
+    elif [ "$PLATFORM" = "rg35xxplus" ]; then
+        ip link set wlan0 up
+        iw dev wlan0 set power_save off
+
+        systemctl start wpa_supplicant
+    else
+        show_message "$PLATFORM is not a supported platform" 2
+        return 1
+    fi
 }
 
 wifi_enabled() {
@@ -233,9 +266,8 @@ wifi_enabled() {
 
 wifi_off() {
     echo "Preparing to toggle wifi off..."
-
-    SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-    if [ -f "$SYSTEM_JSON_PATH" ]; then
+    if [ "$PLATFORM" = "tg5040" ]; then
+        SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
         chmod +x "$JQ"
         "$JQ" '.wifi = 0' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
         mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
@@ -268,7 +300,9 @@ wifi_on() {
         return 1
     fi
 
-    wifi_enable
+    if ! wifi_enable; then
+        return 1
+    fi
 
     DELAY=30
     for i in $(seq 1 "$DELAY"); do
@@ -350,19 +384,32 @@ main() {
         export PLATFORM="tg5040"
     fi
 
-    allowed_platforms="tg5040"
+    allowed_platforms="tg5040 rg35xxplus"
     if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
-        show_message "$PLATFORM is not a supported platform" 1>&2
+        show_message "$PLATFORM is not a supported platform" 2
         exit 1
     fi
 
     if [ ! -f "$progdir/bin/minui-keyboard-$PLATFORM" ]; then
-        show_message "$progdir/bin/minui-keyboard-$PLATFORM not found" 1>&2
+        show_message "$progdir/bin/minui-keyboard-$PLATFORM not found" 2
         exit 1
     fi
     if [ ! -f "$progdir/bin/minui-list-$PLATFORM" ]; then
-        show_message "$progdir/bin/minui-list-$PLATFORM not found" 1>&2
+        show_message "$progdir/bin/minui-list-$PLATFORM not found" 2
         exit 1
+    fi
+
+    chmod +x "$progdir/bin/minui-keyboard-$PLATFORM"
+    chmod +x "$progdir/bin/minui-list-$PLATFORM"
+    chmod +x "$progdir/bin/sdl2imgshow"
+    chmod +x "$JQ"
+
+    if [ "$PLATFORM" = "rg35xxplus" ]; then
+        RGXX_MODEL="$(strings /mnt/vendor/bin/dmenu.bin | grep ^RG)"
+        if [ "$RGXX_MODEL" = "RG28xx" ]; then
+            show_message "Wifi not supported on RG28XX" 2
+            exit 1
+        fi
     fi
 
     while true; do
