@@ -95,6 +95,11 @@ password_screen() {
     fi
 
     touch "$SDCARD_PATH/wifi.txt"
+
+    if grep -q "^$SSID:" "$SDCARD_PATH/wifi.txt" 2>/dev/null; then
+        sed -i "/^$SSID:/d" "$SDCARD_PATH/wifi.txt"
+    fi
+
     echo "$SSID:$password" >>"$SDCARD_PATH/wifi.txt"
 }
 
