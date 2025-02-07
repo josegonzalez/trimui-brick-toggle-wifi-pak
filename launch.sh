@@ -71,12 +71,14 @@ password_screen() {
     SSID="$1"
 
     touch "$SDCARD_PATH/wifi.txt"
+
+    initial_password=""
     if grep -q "^$SSID:" "$SDCARD_PATH/wifi.txt" 2>/dev/null; then
-        return 0
+        initial_password="$(grep "^$SSID:" "$SDCARD_PATH/wifi.txt" | cut -d':' -f2- | xargs)"
     fi
 
     killall sdl2imgshow 2>/dev/null || true
-    password="$("$progdir/bin/minui-keyboard-$PLATFORM" --header "Enter Password")"
+    password="$("$progdir/bin/minui-keyboard-$PLATFORM" --header "Enter Password" --initial-value "$initial_password")"
     exit_code=$?
     if [ "$exit_code" -eq 2 ]; then
         return 2
