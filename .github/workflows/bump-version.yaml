@@ -16,7 +16,7 @@ on:
           - major
 
 env:
-  GITHUB_ACCESS_TOKEN: ${{ secrets.TRIMUI_ACCESS_TOKEN }}
+  GITHUB_ACCESS_TOKEN: ${{ secrets.MINUI_ACCESS_TOKEN }}
 
 jobs:
   bump-version:
