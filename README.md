@@ -1,21 +1,23 @@
-# trimui-brick-wifi.pak
+# minui-wifi.pak
 
-A TrimUI Brick app that manages wifi connections.
-
-> [!IMPORTANT]
-> There is a known issue in MinUI prior to MinUI-20250126-0 where Wifi is partially toggled off on boot, though still shows the Wifi icon. Update to the latest version of MinUI to fix this.
+A MinUI app that manages wifi connections.
 
 ## Installation
 
-1. Mount your TrimUI Brick SD card.
-2. Download the latest release from Github. It will be named `Wifi.pak.zip`.
-3. Copy the zip file to `/Tools/tg5040/Wifi.pak.zip`.
-4. Extract the zip in place, then delete the zip file.
-5. Confirm that there is a `/Tools/tg5040/Wifi.pak/launch.sh` file on your SD card.
-6. Unmount your SD Card and insert it into your TrimUI Brick.
+> [!IMPORTANT]
+> This pak is designed and tested on the following MinUI Platforms and devices:
+>
+> - `tg5040`: Trimui Brick, Trimui Smart Pro
+> - `rg35xxplus`: RG-35XX Plus, RG-34XX, RG-35XX H, RG-35XX SP
+>
+> Use the correct platform for your device.
 
-> [!NOTE]
-> The device directory changed from `/Tools/tg3040` to `/Tools/tg5040` in `MinUI-20250126-0` - released 2025-01-26. If you are using an older version of MinUI, use `/Tools/tg3040` instead.
+1. Mount your MinUI SD card.
+2. Download the latest release from Github. It will be named `Wifi.pak.zip`.
+3. Copy the zip file to `/Tools/$PLATFORM/Wifi.pak.zip`.
+4. Extract the zip in place, then delete the zip file.
+5. Confirm that there is a `/Tools/$PLATFORM/Wifi.pak/launch.sh` file on your SD card.
+6. Unmount your SD Card and insert it into your MinUI device.
 
 ## Usage
 
