@@ -235,7 +235,6 @@ wifi_enable() {
         iw dev wlan0 set power_save off
 
         systemctl start wpa_supplicant
-        systemctl start udhcpd
     else
         show_message "$PLATFORM is not a supported platform" 2
         return 1
