@@ -237,8 +237,8 @@ wifi_enable() {
         systemctl start wpa_supplicant
         systemctl start udhcpd
     else
-        show_message "Error: $PLATFORM is not a supported platform" 1>&2
-        exit 1
+        show_message "$PLATFORM is not a supported platform" 2
+        return 1
     fi
 }
 
@@ -299,7 +299,9 @@ wifi_on() {
         return 1
     fi
 
-    wifi_enable
+    if ! wifi_enable; then
+        return 1
+    fi
 
     DELAY=30
     for i in $(seq 1 "$DELAY"); do
@@ -383,23 +385,23 @@ main() {
 
     allowed_platforms="tg5040 rg35xxplus"
     if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
-        show_message "$PLATFORM is not a supported platform" 1>&2
+        show_message "$PLATFORM is not a supported platform" 2
         exit 1
     fi
 
     if [ ! -f "$progdir/bin/minui-keyboard-$PLATFORM" ]; then
-        show_message "$progdir/bin/minui-keyboard-$PLATFORM not found" 1>&2
+        show_message "$progdir/bin/minui-keyboard-$PLATFORM not found" 2
         exit 1
     fi
     if [ ! -f "$progdir/bin/minui-list-$PLATFORM" ]; then
-        show_message "$progdir/bin/minui-list-$PLATFORM not found" 1>&2
+        show_message "$progdir/bin/minui-list-$PLATFORM not found" 2
         exit 1
     fi
 
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         RGXX_MODEL="$(strings /mnt/vendor/bin/dmenu.bin | grep ^RG)"
         if [ "$RGXX_MODEL" = "RG28xx" ]; then
-            show_message "Wifi not supported on RG28XX" 1>&2
+            show_message "Wifi not supported on RG28XX" 2
             exit 1
         fi
     fi
