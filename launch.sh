@@ -100,7 +100,10 @@ password_screen() {
         sed -i "/^$SSID:/d" "$SDCARD_PATH/wifi.txt"
     fi
 
-    echo "$SSID:$password" >>"$SDCARD_PATH/wifi.txt"
+    echo "$SSID:$password" >"$SDCARD_PATH/wifi.txt.tmp"
+    cat "$SDCARD_PATH/wifi.txt" >>"$SDCARD_PATH/wifi.txt.tmp"
+    mv "$SDCARD_PATH/wifi.txt.tmp" "$SDCARD_PATH/wifi.txt"
+    return 0
 }
 
 show_message() {
@@ -149,6 +152,7 @@ write_config() {
         return 1
     fi
 
+    priority_used=false
     echo "" >>"$SDCARD_PATH/wifi.txt"
     while read -r line; do
         line="$(echo "$line" | xargs)"
@@ -176,6 +180,10 @@ write_config() {
             echo "network={"
             echo "    ssid=\"$ssid\""
             echo "    psk=\"$psk\""
+            if [ "$priority_used" = false ]; then
+                echo "    priority=1"
+                priority_used=true
+            fi
             echo "}"
         } >>"$progdir/res/wpa_supplicant.conf"
     done <"$SDCARD_PATH/wifi.txt"
