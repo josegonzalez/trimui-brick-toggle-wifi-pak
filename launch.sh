@@ -295,6 +295,7 @@ wifi_off() {
     if pgrep wpa_supplicant; then
         echo "Stopping wpa_supplicant..."
         /etc/init.d/wpa_supplicant stop || true
+        systemctl stop wpa_supplicant || true
         killall -9 wpa_supplicant 2>/dev/null || true
     fi
 
@@ -313,6 +314,7 @@ wifi_off() {
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         rm -f /etc/netplan/01-netcfg.yaml
         netplan apply
+        systemctl stop systemd-networkd || true
     fi
 }
 
