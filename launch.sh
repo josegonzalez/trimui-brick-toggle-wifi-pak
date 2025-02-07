@@ -1,5 +1,4 @@
 #!/bin/sh
-set -x
 echo "$0" "$@"
 progdir="$(dirname "$0")"
 cd "$progdir" || exit 1
