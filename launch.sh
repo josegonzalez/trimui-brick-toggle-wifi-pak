@@ -203,7 +203,14 @@ write_config() {
         } >>"$progdir/res/wpa_supplicant.conf"
     done <"$SDCARD_PATH/wifi.txt"
 
-    cp "$progdir/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+    if [ "$PLATFORM" = "rg35xxplus" ]; then
+        cp "$progdir/res/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf
+    elif [ "$PLATFORM" = "tg5040" ]; then
+        cp "$progdir/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+    else
+        show_message "$PLATFORM is not a supported platform" 2
+        return 1
+    fi
 }
 
 wifi_enable() {
