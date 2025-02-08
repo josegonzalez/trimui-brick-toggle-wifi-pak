@@ -15,14 +15,24 @@ main_screen() {
     minui_list_file="/tmp/minui-list"
     rm -f "$minui_list_file"
     touch "$minui_list_file"
+
+    start_on_boot=false
+    if will_start_on_boot; then
+        start_on_boot=true
+    fi
+
     echo "Enabled: false" >>"$minui_list_file"
+    echo "Start on boot: $start_on_boot" >>"$minui_list_file"
     echo "Enable" >>"$minui_list_file"
+    echo "Toggle start on boot" >>"$minui_list_file"
 
     ip_address="N/A"
-    if wifi_enabled; then
+    if "$progdir/bin/wifi-enabled"; then
         echo "Enabled: true" >"$minui_list_file"
+        echo "Start on boot: $start_on_boot" >>"$minui_list_file"
         echo "Disable" >>"$minui_list_file"
         echo "Connect to network" >>"$minui_list_file"
+        echo "Toggle start on boot" >>"$minui_list_file"
     fi
 
     ssid="N/A"
@@ -56,6 +66,7 @@ main_screen() {
 
         if [ "$ssid" != "N/A" ] && [ "$ip_address" != "N/A" ]; then
             echo "Enabled: true" >"$minui_list_file"
+            echo "Start on boot: $start_on_boot" >>"$minui_list_file"
             echo "SSID: $ssid" >>"$minui_list_file"
             if [ "$ip_address" = "N/A" ]; then
                 echo "IP: N/A" >>"$minui_list_file"
@@ -65,6 +76,7 @@ main_screen() {
             fi
             echo "Disable" >>"$minui_list_file"
             echo "Connect to network" >>"$minui_list_file"
+            echo "Toggle start on boot" >>"$minui_list_file"
         fi
     fi
 
@@ -162,6 +174,29 @@ show_message() {
     fi
 }
 
+disable_start_on_boot() {
+    sed -i '/wifi-start-on-boot/d' "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    return 0
+}
+
+enable_start_on_boot() {
+    if [ ! -f "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh" ]; then
+        echo '#!/bin/sh' >"$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+        echo '' >>"$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    fi
+
+    echo "test -f \"\$SDCARD_PATH/Tools/\$PLATFORM/Wifi.pak/bin/on-boot\" && \"\$SDCARD_PATH/Tools/\$PLATFORM/Wifi.pak/bin/on-boot\" # wifi-start-on-boot" >>"$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    chmod +x "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    return 0
+}
+
+will_start_on_boot() {
+    if grep -q "wifi-start-on-boot" "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh" >/dev/null 2>&1; then
+        return 0
+    fi
+    return 1
+}
+
 write_config() {
     echo "Generating wpa_supplicant.conf..."
     cp "$progdir/res/wpa_supplicant.conf.tmpl" "$progdir/res/wpa_supplicant.conf"
@@ -237,65 +272,6 @@ write_config() {
     fi
 }
 
-wifi_enable() {
-    echo "Preparing to enable wifi..."
-    if [ "$PLATFORM" = "tg5040" ]; then
-        SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-        chmod +x "$JQ"
-        "$JQ" '.wifi = 1' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
-        mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
-    fi
-
-    echo "Unblocking wireless..."
-    rfkill unblock wifi || true
-
-    echo "Starting wpa_supplicant..."
-    if [ "$PLATFORM" = "tg5040" ]; then
-        /etc/init.d/wpa_supplicant stop || true
-        /etc/init.d/wpa_supplicant start || true
-        ( (udhcpc -i wlan0 -q &) &)
-    elif [ "$PLATFORM" = "rg35xxplus" ]; then
-        ip link set wlan0 up
-        iw dev wlan0 set power_save off
-
-        systemctl start wpa_supplicant || true
-        systemctl start systemd-networkd || true
-        netplan apply
-    else
-        show_message "$PLATFORM is not a supported platform" 2
-        return 1
-    fi
-
-    ifconfig wlan0 up || true
-}
-
-wifi_enabled() {
-    SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-    if [ -f "$SYSTEM_JSON_PATH" ]; then
-        chmod +x "$JQ"
-        wifi_enabled="$("$JQ" '.wifi' "$SYSTEM_JSON_PATH")"
-        if [ "$wifi_enabled" != "1" ]; then
-            return 1
-        fi
-    fi
-
-    wifi_status="$(rfkill list wifi || true)"
-    if echo "$wifi_status" | grep -q "blocked: yes"; then
-        return 1
-    fi
-
-    if ! pgrep wpa_supplicant; then
-        return 1
-    fi
-
-    # check if the device is on
-    if [ "$(cat /sys/class/net/wlan0/flags 2>/dev/null)" != "0x1003" ]; then
-        return 1
-    fi
-
-    return 0
-}
-
 wifi_off() {
     echo "Preparing to toggle wifi off..."
     if [ "$PLATFORM" = "tg5040" ]; then
@@ -338,7 +314,7 @@ wifi_on() {
         return 1
     fi
 
-    if ! wifi_enable; then
+    if ! "$progdir/bin/wifi-enable"; then
         return 1
     fi
 
@@ -358,9 +334,12 @@ wifi_on() {
 }
 
 network_loop() {
-    if ! wifi_enabled; then
+    if ! "$progdir/bin/wifi-enabled"; then
         show_message "Enabling wifi..." forever
-        wifi_enable
+        if ! "$progdir/bin/wifi-enable"; then
+            show_message "Failed to enable wifi!" 2
+            return 1
+        fi
     fi
 
     next_screen="main"
@@ -465,7 +444,10 @@ main() {
             fi
         elif echo "$selection" | grep -q "^Enable$"; then
             show_message "Enabling wifi..." forever
-            wifi_enable
+            if ! "$progdir/bin/wifi-enable"; then
+                show_message "Failed to enable wifi!" 2
+                continue
+            fi
             sleep 2
         elif echo "$selection" | grep -q "^Refresh connection$"; then
             show_message "Disconnecting from wifi..." forever
@@ -475,7 +457,10 @@ main() {
                 exit 1
             fi
             show_message "Refreshing connection..." forever
-            wifi_enable
+            if ! "$progdir/bin/wifi-enable"; then
+                show_message "Failed to enable wifi!" 2
+                continue
+            fi
             sleep 2
         elif echo "$selection" | grep -q "^Disable$"; then
             show_message "Disconnecting from wifi..." forever
@@ -483,6 +468,20 @@ main() {
                 show_message "Failed to stop wifi!" 2
                 killall sdl2imgshow 2>/dev/null || true
                 exit 1
+            fi
+        elif echo "$selection" | grep -q "^Toggle start on boot$"; then
+            if will_start_on_boot; then
+                show_message "Disabling start on boot..." forever
+                if ! disable_start_on_boot; then
+                    show_message "Failed to disable start on boot!" 2
+                    continue
+                fi
+            else
+                show_message "Enabling start on boot..." forever
+                if ! enable_start_on_boot; then
+                    show_message "Failed to enable start on boot!" 2
+                    continue
+                fi
             fi
         fi
     done

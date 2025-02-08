@@ -1,0 +1,45 @@
+#!/bin/sh
+bindir="$(dirname "$0")"
+JQ="$bindir/jq-arm"
+if uname -m | grep -q '64'; then
+    JQ="$bindir/jq-arm64"
+fi
+
+main() {
+    if [ "$PLATFORM" = "tg3040" ] && [ -z "$DEVICE" ]; then
+        export DEVICE="brick"
+        export PLATFORM="tg5040"
+    fi
+
+    echo "Preparing to enable wifi..."
+    if [ "$PLATFORM" = "tg5040" ]; then
+        SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
+        chmod +x "$JQ"
+        "$JQ" '.wifi = 1' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
+        mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
+    fi
+
+    echo "Unblocking wireless..."
+    rfkill unblock wifi || true
+
+    echo "Starting wpa_supplicant..."
+    if [ "$PLATFORM" = "tg5040" ]; then
+        /etc/init.d/wpa_supplicant stop || true
+        /etc/init.d/wpa_supplicant start || true
+        ( (udhcpc -i wlan0 -q &) &)
+    elif [ "$PLATFORM" = "rg35xxplus" ]; then
+        ip link set wlan0 up
+        iw dev wlan0 set power_save off
+
+        systemctl start wpa_supplicant || true
+        systemctl start systemd-networkd || true
+        netplan apply
+    else
+        echo "$PLATFORM is not a supported platform for Wifi.pak"
+        return 1
+    fi
+
+    ifconfig wlan0 up || true
+}
+
+main "$@"

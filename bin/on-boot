@@ -1,0 +1,12 @@
+#!/bin/sh
+bindir="$(dirname "$0")"
+
+main() {
+    "$bindir/wifi-enable" &
+}
+
+if [ -f "$LOGS_PATH/Wifi.txt" ]; then
+    mv "$LOGS_PATH/Wifi.txt" "$LOGS_PATH/Wifi.txt.old"
+fi
+
+main "$@" >"$LOGS_PATH/Wifi.txt" 2>&1
