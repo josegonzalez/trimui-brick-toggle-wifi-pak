@@ -385,8 +385,7 @@ network_loop() {
         show_message "Connecting to $SSID..." forever
         if ! wifi_on; then
             show_message "Failed to start wifi!" 2
-            killall sdl2imgshow >/dev/null 2>&1 || true
-            exit 1
+            return 1
         fi
         break
     done
@@ -410,16 +409,16 @@ main() {
     allowed_platforms="tg5040 rg35xxplus"
     if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
         show_message "$PLATFORM is not a supported platform" 2
-        exit 1
+        return 1
     fi
 
     if [ ! -f "$progdir/bin/minui-keyboard-$PLATFORM" ]; then
         show_message "$progdir/bin/minui-keyboard-$PLATFORM not found" 2
-        exit 1
+        return 1
     fi
     if [ ! -f "$progdir/bin/minui-list-$PLATFORM" ]; then
         show_message "$progdir/bin/minui-list-$PLATFORM not found" 2
-        exit 1
+        return 1
     fi
 
     chmod +x "$progdir/bin/minui-keyboard-$PLATFORM"
@@ -431,7 +430,7 @@ main() {
         RGXX_MODEL="$(strings /mnt/vendor/bin/dmenu.bin | grep ^RG)"
         if [ "$RGXX_MODEL" = "RG28xx" ]; then
             show_message "Wifi not supported on RG28XX" 2
-            exit 1
+            return 1
         fi
     fi
 
@@ -459,8 +458,7 @@ main() {
             show_message "Disconnecting from wifi..." forever
             if ! wifi_off; then
                 show_message "Failed to stop wifi!" 2
-                killall sdl2imgshow >/dev/null 2>&1 || true
-                exit 1
+                return 1
             fi
             show_message "Refreshing connection..." forever
             if ! "$progdir/bin/wifi-enable"; then
@@ -472,8 +470,7 @@ main() {
             show_message "Disconnecting from wifi..." forever
             if ! wifi_off; then
                 show_message "Failed to stop wifi!" 2
-                killall sdl2imgshow >/dev/null 2>&1 || true
-                exit 1
+                return 1
             fi
         elif echo "$selection" | grep -q "^Toggle start on boot$"; then
             if will_start_on_boot; then
