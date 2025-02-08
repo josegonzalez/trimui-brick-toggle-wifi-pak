@@ -270,6 +270,11 @@ wifi_enabled() {
         fi
     fi
 
+    wifi_status="$(rfkill list wifi || true)"
+    if echo "$wifi_status" | grep -q "blocked: yes"; then
+        return 1
+    fi
+
     if ! pgrep wpa_supplicant; then
         return 1
     fi
