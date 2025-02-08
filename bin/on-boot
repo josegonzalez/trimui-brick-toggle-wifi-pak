@@ -1,12 +1,14 @@
 #!/bin/sh
 bindir="$(dirname "$0")"
+progdir="$(dirname "$bindir")"
+PAK_NAME="$(basename "$progdir")"
 
 main() {
     "$bindir/wifi-enable" &
 }
 
-if [ -f "$LOGS_PATH/Wifi.txt" ]; then
-    mv "$LOGS_PATH/Wifi.txt" "$LOGS_PATH/Wifi.txt.old"
+if [ -f "$LOGS_PATH/$PAK_NAME.txt" ]; then
+    mv "$LOGS_PATH/$PAK_NAME.txt" "$LOGS_PATH/$PAK_NAME.txt.old"
 fi
 
-main "$@" >"$LOGS_PATH/Wifi.txt" 2>&1
+main "$@" >"$LOGS_PATH/$PAK_NAME.txt" 2>&1

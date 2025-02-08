@@ -5,7 +5,6 @@ PLATFORMS := tg5040 rg35xxplus
 MINUI_LIST_VERSION := 0.3.1
 MINUI_KEYBOARD_VERSION := 0.2.1
 
-
 clean:
 	rm -f bin/jq-arm || true
 	rm -f bin/jq-arm64 || true
