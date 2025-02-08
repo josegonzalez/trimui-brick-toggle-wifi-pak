@@ -2,9 +2,9 @@
 echo "$0" "$@"
 progdir="$(dirname "$0")"
 cd "$progdir" || exit 1
+PAK_NAME="$(basename "$progdir")"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$progdir/lib"
 echo 1 >/tmp/stay_awake
-trap "rm -f /tmp/stay_awake" EXIT INT TERM HUP QUIT
 
 JQ="$progdir/bin/jq-arm"
 if uname -m | grep -q '64'; then
@@ -175,7 +175,7 @@ show_message() {
 }
 
 disable_start_on_boot() {
-    sed -i '/wifi-start-on-boot/d' "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    sed -i "/${PAK_NAME}-on-boot/d" "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
     return 0
 }
 
@@ -185,13 +185,13 @@ enable_start_on_boot() {
         echo '' >>"$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
     fi
 
-    echo "test -f \"\$SDCARD_PATH/Tools/\$PLATFORM/Wifi.pak/bin/on-boot\" && \"\$SDCARD_PATH/Tools/\$PLATFORM/Wifi.pak/bin/on-boot\" # wifi-start-on-boot" >>"$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    echo "test -f \"\$SDCARD_PATH/Tools/\$PLATFORM/$PAK_NAME/bin/on-boot\" && \"\$SDCARD_PATH/Tools/\$PLATFORM/$PAK_NAME/bin/on-boot\" # ${PAK_NAME}-on-boot" >>"$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
     chmod +x "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
     return 0
 }
 
 will_start_on_boot() {
-    if grep -q "wifi-start-on-boot" "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh" >/dev/null 2>&1; then
+    if grep -q "${PAK_NAME}-on-boot" "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh" >/dev/null 2>&1; then
         return 0
     fi
     return 1
@@ -393,8 +393,13 @@ network_loop() {
     echo "$next_screen"
 }
 
+cleanup() {
+    rm -f /tmp/stay_awake
+    killall sdl2imgshow 2>/dev/null || true
+}
+
 main() {
-    trap "killall sdl2imgshow 2>/dev/null || true" EXIT INT TERM HUP QUIT
+    trap "cleanup" EXIT INT TERM HUP QUIT
 
     if [ "$PLATFORM" = "tg3040" ] && [ -z "$DEVICE" ]; then
         export DEVICE="brick"
@@ -485,12 +490,11 @@ main() {
             fi
         fi
     done
-    killall sdl2imgshow 2>/dev/null || true
 }
 
 mkdir -p "$LOGS_PATH"
-if [ -f "$LOGS_PATH/Wifi.txt" ]; then
-    mv "$LOGS_PATH/Wifi.txt" "$LOGS_PATH/Wifi.txt.old"
+if [ -f "$LOGS_PATH/$PAK_NAME.txt" ]; then
+    mv "$LOGS_PATH/$PAK_NAME.txt" "$LOGS_PATH/$PAK_NAME.txt.old"
 fi
 
-main "$@" >"$LOGS_PATH/Wifi.txt" 2>&1
+main "$@" >"$LOGS_PATH/$PAK_NAME.txt" 2>&1
