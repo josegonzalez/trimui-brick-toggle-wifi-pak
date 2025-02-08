@@ -15,7 +15,6 @@ main_screen() {
     minui_list_file="/tmp/minui-list"
     rm -f "$minui_list_file"
     touch "$minui_list_file"
-    enabled="$(cat /sys/class/net/wlan0/operstate)"
     echo "Enabled: false" >>"$minui_list_file"
     echo "Enable" >>"$minui_list_file"
 
@@ -26,6 +25,9 @@ main_screen() {
         echo "Connect to network" >>"$minui_list_file"
     fi
 
+    ssid="N/A"
+    ip_address="N/A"
+    enabled="$(cat /sys/class/net/wlan0/operstate)"
     if [ "$enabled" = "up" ]; then
         ssid=""
         ip_address=""
@@ -52,11 +54,18 @@ main_screen() {
             ip_address="N/A"
         fi
 
-        echo "Enabled: true" >"$minui_list_file"
-        echo "SSID: $ssid" >>"$minui_list_file"
-        echo "IP: $ip_address" >>"$minui_list_file"
-        echo "Disable" >>"$minui_list_file"
-        echo "Connect to network" >>"$minui_list_file"
+        if [ "$ssid" != "N/A" ] && [ "$ip_address" != "N/A" ]; then
+            echo "Enabled: true" >"$minui_list_file"
+            echo "SSID: $ssid" >>"$minui_list_file"
+            if [ "$ip_address" = "N/A" ]; then
+                echo "IP: N/A" >>"$minui_list_file"
+                echo "Refresh connection" >>"$minui_list_file"
+            else
+                echo "IP: $ip_address" >>"$minui_list_file"
+            fi
+            echo "Disable" >>"$minui_list_file"
+            echo "Connect to network" >>"$minui_list_file"
+        fi
     fi
 
     killall sdl2imgshow 2>/dev/null || true
@@ -456,6 +465,16 @@ main() {
             fi
         elif echo "$selection" | grep -q "^Enable$"; then
             show_message "Enabling wifi..." forever
+            wifi_enable
+            sleep 2
+        elif echo "$selection" | grep -q "^Refresh connection$"; then
+            show_message "Disconnecting from wifi..." forever
+            if ! wifi_off; then
+                show_message "Failed to stop wifi!" 2
+                killall sdl2imgshow 2>/dev/null || true
+                exit 1
+            fi
+            show_message "Refreshing connection..." forever
             wifi_enable
             sleep 2
         elif echo "$selection" | grep -q "^Disable$"; then
