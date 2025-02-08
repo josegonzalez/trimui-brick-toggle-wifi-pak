@@ -493,9 +493,4 @@ main() {
     done
 }
 
-mkdir -p "$LOGS_PATH"
-if [ -f "$LOGS_PATH/$PAK_NAME.txt" ]; then
-    mv "$LOGS_PATH/$PAK_NAME.txt" "$LOGS_PATH/$PAK_NAME.txt.old"
-fi
-
 main "$@" >"$LOGS_PATH/$PAK_NAME.txt" 2>&1
