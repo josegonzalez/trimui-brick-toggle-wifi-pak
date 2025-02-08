@@ -1,6 +1,7 @@
 #!/bin/sh
 bindir="$(dirname "$0")"
 progdir="$(dirname "$bindir")"
+[ -f "$progdir/debug" ] && set -x
 PAK_NAME="$(basename "$progdir")"
 
 main() {

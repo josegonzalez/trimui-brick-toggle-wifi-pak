@@ -24,6 +24,10 @@ Use the correct platform for your device.
 
 Browse to `Tools > Wifi` and press `A` to enter the wifi management screen. It will display your current wifi connection status, and allow you to scan for available networks as well as connect to them (with password entry).
 
+### Debug Logging
+
+To enable debug logging, create a file named `debug` in the pak folder. Logs will be written to the `$SDCARD_PATH/.userdata/$PLATFORM/logs/` folder.
+
 ### Customizing Wifi Credentials
 
 > [!IMPORTANT]
