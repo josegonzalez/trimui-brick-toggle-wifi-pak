@@ -1,5 +1,8 @@
 #!/bin/sh
 bindir="$(dirname "$0")"
+progdir="$(dirname "$bindir")"
+[ -f "$progdir/debug" ] && set -x
+
 JQ="$bindir/jq-arm"
 if uname -m | grep -q '64'; then
     JQ="$bindir/jq-arm64"
