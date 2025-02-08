@@ -8,9 +8,9 @@ MINUI_KEYBOARD_VERSION := 0.2.1
 clean:
 	rm -f bin/jq-arm || true
 	rm -f bin/jq-arm64 || true
-	rm -f bin/sdl2imgshow || true
 	rm -f bin/minui-keyboard-* || true
 	rm -f bin/minui-list-* || true
+	rm -f bin/sdl2imgshow || true
 	rm -f res/fonts/BPreplayBold.otf || true
 
 build: $(foreach platform,$(PLATFORMS),bin/minui-keyboard-$(platform) bin/minui-list-$(platform)) bin/jq-arm bin/jq-arm64 bin/sdl2imgshow res/fonts/BPreplayBold.otf
@@ -21,7 +21,6 @@ bin/jq-arm:
 bin/jq-arm64:
 	curl -f -o bin/jq-arm64 -sSL https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-arm64
 
-# dynamically create the minui-keyboard target for all platforms
 bin/minui-keyboard-%:
 	curl -f -o bin/minui-keyboard-$* -sSL https://github.com/josegonzalez/minui-keyboard/releases/download/$(MINUI_KEYBOARD_VERSION)/minui-keyboard-$*
 	chmod +x bin/minui-keyboard-$*
