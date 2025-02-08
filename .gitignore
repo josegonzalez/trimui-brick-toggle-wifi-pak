@@ -3,3 +3,7 @@ bin/*
 !bin/.gitkeep
 res/fonts/*
 !res/fonts/.gitkeep
+
+!bin/wifi-enable
+!bin/wifi-enabled
+!bin/on-boot
