@@ -81,7 +81,7 @@ main_screen() {
         fi
     fi
 
-    killall sdl2imgshow 2>/dev/null || true
+    killall sdl2imgshow >/dev/null 2>&1 || true
     "$progdir/bin/minui-list-$PLATFORM" --file "$minui_list_file" --format text --header "Wifi Configuration"
 }
 
@@ -100,7 +100,7 @@ networks_screen() {
         sleep 1
     done
 
-    killall sdl2imgshow 2>/dev/null || true
+    killall sdl2imgshow >/dev/null 2>&1 || true
     "$progdir/bin/minui-list-$PLATFORM" --file "$minui_list_file" --format text --header "Wifi Networks"
 }
 
@@ -114,7 +114,7 @@ password_screen() {
         initial_password="$(grep "^$SSID:" "$SDCARD_PATH/wifi.txt" | cut -d':' -f2- | xargs)"
     fi
 
-    killall sdl2imgshow 2>/dev/null || true
+    killall sdl2imgshow >/dev/null 2>&1 || true
     password="$("$progdir/bin/minui-keyboard-$PLATFORM" --header "Enter Password" --initial-value "$initial_password")"
     exit_code=$?
     if [ "$exit_code" -eq 2 ]; then
@@ -153,7 +153,7 @@ show_message() {
         seconds="forever"
     fi
 
-    killall sdl2imgshow 2>/dev/null || true
+    killall sdl2imgshow >/dev/null 2>&1 || true
     echo "$message" 1>&2
     if [ "$seconds" = "forever" ]; then
         "$progdir/bin/sdl2imgshow" \
@@ -385,7 +385,7 @@ network_loop() {
         show_message "Connecting to $SSID..." forever
         if ! wifi_on; then
             show_message "Failed to start wifi!" 2
-            killall sdl2imgshow 2>/dev/null || true
+            killall sdl2imgshow >/dev/null 2>&1 || true
             exit 1
         fi
         break
@@ -396,7 +396,7 @@ network_loop() {
 
 cleanup() {
     rm -f /tmp/stay_awake
-    killall sdl2imgshow 2>/dev/null || true
+    killall sdl2imgshow >/dev/null 2>&1 || true
 }
 
 main() {
@@ -459,7 +459,7 @@ main() {
             show_message "Disconnecting from wifi..." forever
             if ! wifi_off; then
                 show_message "Failed to stop wifi!" 2
-                killall sdl2imgshow 2>/dev/null || true
+                killall sdl2imgshow >/dev/null 2>&1 || true
                 exit 1
             fi
             show_message "Refreshing connection..." forever
@@ -472,7 +472,7 @@ main() {
             show_message "Disconnecting from wifi..." forever
             if ! wifi_off; then
                 show_message "Failed to stop wifi!" 2
-                killall sdl2imgshow 2>/dev/null || true
+                killall sdl2imgshow >/dev/null 2>&1 || true
                 exit 1
             fi
         elif echo "$selection" | grep -q "^Toggle start on boot$"; then
