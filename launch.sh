@@ -258,7 +258,7 @@ write_config() {
         if [ "$has_passwords" = false ]; then
             rm -f /etc/netplan/01-netcfg.yaml
         fi
-    elif [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
+    elif [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "tg5040" ]; then
         cp "$progdir/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
     else
         show_message "$PLATFORM is not a supported platform" 2
@@ -399,7 +399,7 @@ main() {
         export PLATFORM="tg5040"
     fi
 
-    allowed_platforms="my282 rg35xxplus tg5040"
+    allowed_platforms="miyoomini rg35xxplus tg5040"
     if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
         show_message "$PLATFORM is not a supported platform" 2
         return 1
