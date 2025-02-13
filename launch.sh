@@ -17,23 +17,19 @@ main_screen() {
     rm -f "$minui_list_file"
     touch "$minui_list_file"
 
-    start_on_boot=false
+    start_on_boot_message="Enable start on boot"
     if will_start_on_boot; then
-        start_on_boot=true
+        start_on_boot_message="Disable start on boot"
     fi
-
-    echo "Enabled: false" >>"$minui_list_file"
-    echo "Start on boot: $start_on_boot" >>"$minui_list_file"
-    echo "Enable" >>"$minui_list_file"
-    echo "Toggle start on boot" >>"$minui_list_file"
 
     ip_address="N/A"
     if "$progdir/bin/wifi-enabled"; then
-        echo "Enabled: true" >"$minui_list_file"
-        echo "Start on boot: $start_on_boot" >>"$minui_list_file"
-        echo "Disable" >>"$minui_list_file"
+        echo "Disable wifi" >>"$minui_list_file"
+        echo "$start_on_boot_message" >>"$minui_list_file"
         echo "Connect to network" >>"$minui_list_file"
-        echo "Toggle start on boot" >>"$minui_list_file"
+    else
+        echo "Enable wifi" >>"$minui_list_file"
+        echo "$start_on_boot_message" >>"$minui_list_file"
     fi
 
     ssid="N/A"
@@ -65,19 +61,16 @@ main_screen() {
             ip_address="N/A"
         fi
 
-        if [ "$ssid" != "N/A" ] && [ "$ip_address" != "N/A" ]; then
-            echo "Enabled: true" >"$minui_list_file"
-            echo "Start on boot: $start_on_boot" >>"$minui_list_file"
-            echo "SSID: $ssid" >>"$minui_list_file"
+        if [ "$ssid" != "N/A" ]; then
+            rm -f "$minui_list_file"
+            echo "Disable wifi" >>"$minui_list_file"
+            echo "$start_on_boot_message" >>"$minui_list_file"
+            echo "Change network" >>"$minui_list_file"
             if [ "$ip_address" = "N/A" ]; then
-                echo "IP: N/A" >>"$minui_list_file"
                 echo "Refresh connection" >>"$minui_list_file"
-            else
-                echo "IP: $ip_address" >>"$minui_list_file"
             fi
-            echo "Disable" >>"$minui_list_file"
-            echo "Connect to network" >>"$minui_list_file"
-            echo "Toggle start on boot" >>"$minui_list_file"
+            echo "SSID: $ssid" >>"$minui_list_file"
+            echo "IP: $ip_address" >>"$minui_list_file"
         fi
     fi
 
@@ -265,7 +258,7 @@ write_config() {
         if [ "$has_passwords" = false ]; then
             rm -f /etc/netplan/01-netcfg.yaml
         fi
-    elif [ "$PLATFORM" = "tg5040" ]; then
+    elif [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "tg5040" ]; then
         cp "$progdir/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
     else
         show_message "$PLATFORM is not a supported platform" 2
@@ -406,7 +399,7 @@ main() {
         export PLATFORM="tg5040"
     fi
 
-    allowed_platforms="tg5040 rg35xxplus"
+    allowed_platforms="miyoomini rg35xxplus tg5040"
     if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
         show_message "$PLATFORM is not a supported platform" 2
         return 1
@@ -442,18 +435,29 @@ main() {
             break
         fi
 
-        if echo "$selection" | grep -q "^Connect to network$"; then
+        if echo "$selection" | grep -q "^Change network$"; then
             next_screen="$(network_loop)"
             if [ "$next_screen" = "exit" ]; then
                 break
             fi
-        elif echo "$selection" | grep -q "^Enable$"; then
+        elif echo "$selection" | grep -q "^Connect to network$"; then
+            next_screen="$(network_loop)"
+            if [ "$next_screen" = "exit" ]; then
+                break
+            fi
+        elif echo "$selection" | grep -q "^Enable wifi$"; then
             show_message "Enabling wifi..." forever
             if ! "$progdir/bin/wifi-enable"; then
                 show_message "Failed to enable wifi!" 2
                 continue
             fi
             sleep 2
+        elif echo "$selection" | grep -q "^Disable wifi$"; then
+            show_message "Disconnecting from wifi..." forever
+            if ! wifi_off; then
+                show_message "Failed to stop wifi!" 2
+                return 1
+            fi
         elif echo "$selection" | grep -q "^Refresh connection$"; then
             show_message "Disconnecting from wifi..." forever
             if ! wifi_off; then
@@ -466,25 +470,17 @@ main() {
                 continue
             fi
             sleep 2
-        elif echo "$selection" | grep -q "^Disable$"; then
-            show_message "Disconnecting from wifi..." forever
-            if ! wifi_off; then
-                show_message "Failed to stop wifi!" 2
-                return 1
+        elif echo "$selection" | grep -q "^Enable start on boot$"; then
+            show_message "Enabling start on boot..." forever
+            if ! enable_start_on_boot; then
+                show_message "Failed to enable start on boot!" 2
+                continue
             fi
-        elif echo "$selection" | grep -q "^Toggle start on boot$"; then
-            if will_start_on_boot; then
-                show_message "Disabling start on boot..." forever
-                if ! disable_start_on_boot; then
-                    show_message "Failed to disable start on boot!" 2
-                    continue
-                fi
-            else
-                show_message "Enabling start on boot..." forever
-                if ! enable_start_on_boot; then
-                    show_message "Failed to enable start on boot!" 2
-                    continue
-                fi
+        elif echo "$selection" | grep -q "^Disable start on boot$"; then
+            show_message "Disabling start on boot..." forever
+            if ! disable_start_on_boot; then
+                show_message "Failed to disable start on boot!" 2
+                continue
             fi
         fi
     done

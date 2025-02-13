@@ -25,7 +25,7 @@ main() {
     rfkill unblock wifi || true
 
     echo "Starting wpa_supplicant..."
-    if [ "$PLATFORM" = "tg5040" ]; then
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "tg5040" ]; then
         /etc/init.d/wpa_supplicant stop || true
         /etc/init.d/wpa_supplicant start || true
         ( (udhcpc -i wlan0 -q &) &)
